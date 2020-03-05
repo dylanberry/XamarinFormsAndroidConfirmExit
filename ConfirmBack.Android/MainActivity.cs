@@ -2,6 +2,7 @@
 using Android.Content.PM;
 using Android.Runtime;
 using Android.OS;
+using Android.Widget;
 
 namespace ConfirmBack.Droid
 {
@@ -26,23 +27,51 @@ namespace ConfirmBack.Droid
             base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         }
 
+        bool _isBackPressed = false;
         public override void OnBackPressed()
         {
-            if (((ConfirmBack.App)App.Current).PromptToConfirmExit)
+            var app = (ConfirmBack.App)App.Current;
+            if (app.PromptToConfirmExit)
             {
-                using (var alert = new AlertDialog.Builder(this))
-                {
-                    alert.SetTitle("Confirm Exit?");
-                    alert.SetMessage("Are you sure you want to exit?");
-                    alert.SetPositiveButton("Yes", (sender, args) => { FinishAffinity(); }); // inform Android that we are done with the activity
-                    alert.SetNegativeButton("No", (sender, args) => {}); // do nothing
+                if (app.IsToastExitConfirmation)
+                    ConfirmWithToast();
+                else
+                    ConfirmWithDialog();
 
-                    var dialog = alert.Create();
-                    dialog.Show();
-                }
                 return;
             }
             base.OnBackPressed();
+        }
+
+        private void ConfirmWithDialog()
+        {
+            using (var alert = new AlertDialog.Builder(this))
+            {
+                alert.SetTitle("Confirm Exit");
+                alert.SetMessage("Are you sure you want to exit?");
+                alert.SetPositiveButton("Yes", (sender, args) => { FinishAffinity(); });
+                alert.SetNegativeButton("No", (sender, args) => { }); // do nothing
+
+                var dialog = alert.Create();
+                dialog.Show();
+            }
+            return;
+        }
+
+        private void ConfirmWithToast()
+        {
+            if (_isBackPressed)
+            {
+                FinishAffinity(); // inform Android that we are done with the activity
+                return;
+            }
+
+            _isBackPressed = true;
+            Toast.MakeText(this, "Press back again to exit", ToastLength.Short).Show();
+
+            // Disable back to exit after 2 seconds.
+            new Handler().PostDelayed(() => { _isBackPressed = false; }, 2000);
+            return;
         }
     }
 }

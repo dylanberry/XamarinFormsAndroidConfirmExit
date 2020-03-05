@@ -3,6 +3,7 @@ using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 using ConfirmBack.Services;
 using ConfirmBack.Views;
+using Xamarin.Essentials;
 
 namespace ConfirmBack
 {
@@ -16,6 +17,11 @@ namespace ConfirmBack
                 if (MainPage is ContentPage)
                 {
                     promptToConfirmExit = true;
+                }
+                else if (MainPage is Xamarin.Forms.MasterDetailPage masterDetailPage
+                    && masterDetailPage.Detail is NavigationPage detailNavigationPage)
+                {
+                    promptToConfirmExit = detailNavigationPage.Navigation.NavigationStack.Count <= 1;
                 }
                 else if (MainPage is NavigationPage mainPage)
                 {
@@ -43,7 +49,7 @@ namespace ConfirmBack
             InitializeComponent();
 
             DependencyService.Register<MockDataStore>();
-            MainPage = new MainPage();
+            MainPage = new TabNavPage();
         }
 
         protected override void OnStart()
@@ -56,6 +62,20 @@ namespace ConfirmBack
 
         protected override void OnResume()
         {
+        }
+
+        public void ToggleNavigation()
+        {
+            if (MainPage is TabNavPage)
+                MainPage = new MasterDetailNavPage();
+            else
+                MainPage = new TabNavPage();
+        }
+
+        public bool IsToastExitConfirmation
+        {
+            get => Preferences.Get(nameof(IsToastExitConfirmation), false);
+            set => Preferences.Set(nameof(IsToastExitConfirmation), value);
         }
     }
 }
